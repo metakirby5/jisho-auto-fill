@@ -1,16 +1,20 @@
 ﻿# -*- coding: utf-8 -*-
+"""
+Adds a menu item to auto-fill word, reading, and meaning from jisho.org.
+Globally bound to Ctrl+Shift+J.
+"""
 
 import json
 from typing import Optional, Any, Dict, Sequence
 from urllib.parse import quote
 from urllib.request import urlopen
 
+import aqt.qt as qt
 from PyQt5 import QtCore
 from anki.notes import Note
 from aqt import mw, gui_hooks
 from aqt.editor import Editor
 from aqt.utils import showInfo
-from aqt.qt import *
 
 # TODO: Add configuration
 
@@ -84,7 +88,8 @@ def fill_meaning() -> None:
     return
 
 
-def get_meaning(senses: Optional[Sequence[Dict[str, Sequence[str]]]]) -> Optional[str]:
+def get_meaning(senses: Optional[Sequence[Dict[str, Sequence[str]]]]) \
+        -> Optional[str]:
     if not senses:
         return None
 
@@ -110,9 +115,10 @@ def try_get_data(data: Dict[str, str], *keys: str) -> Optional[Any]:
         except KeyError:
             pass
     showInfo(f'{", ".join(keys)} not in Jisho data.')
+    return None
 
 
-def try_set_field(note: Note, key: str, value: str):
+def try_set_field(note: Note, key: str, value: Any):
     if not (key and value):
         return
 
@@ -122,8 +128,8 @@ def try_set_field(note: Note, key: str, value: str):
         showInfo(f'{key} not in note.')
 
 
-action = QAction('&Jisho Import', mw)
+action = qt.QAction('&Jisho Auto-Fill', mw)
 action.setShortcut('Ctrl+Shift+J')
 action.setShortcutContext(QtCore.Qt.ApplicationShortcut)
-qconnect(action.triggered, jisho_import)
+qt.qconnect(action.triggered, jisho_import)
 mw.form.menuTools.addAction(action)
