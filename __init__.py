@@ -2,6 +2,8 @@
 """
 Adds a menu item to auto-fill word, reading, and meaning from jisho.org.
 Globally bound to Ctrl+Shift+J.
+
+Based on https://ankiweb.net/shared/info/1545080191.
 """
 
 import json
@@ -16,13 +18,15 @@ from aqt import mw, gui_hooks
 from aqt.editor import Editor
 from aqt.utils import showInfo
 
-# TODO: Add configuration
-
 JISHO_SEARCH = 'https://jisho.org/api/v1/search/words?keyword={0}'
-LOOKUP_FIELD = 'Expression'
-WORD_FIELD = 'Expression'
-READING_FIELD = 'Reading'
-MEANING_FIELD = 'Meaning'
+
+config = mw.addonManager.getConfig(__name__)
+shortcut = config['hotkey']
+fields = config['fields']
+lookup_field = fields['lookup']
+word_field = fields['word']
+reading_field = fields['reading']
+meaning_field = fields['meaning']
 
 editor: Optional[Editor] = None
 
@@ -50,13 +54,17 @@ def fill_meaning() -> None:
 
     note = editor.note
 
+    if not lookup_field:
+        showInfo('No lookup field.')
+        return
+
     try:
-        word = note[LOOKUP_FIELD]
+        word = note[lookup_field]
     except KeyError:
-        showInfo(f'{LOOKUP_FIELD} not in note.')
+        showInfo(f'{lookup_field} not in note.')
         return
     if not word:
-        showInfo(f'{LOOKUP_FIELD} is empty.')
+        showInfo(f'{lookup_field} is empty.')
         return
 
     url = JISHO_SEARCH.format(quote(word.encode('utf8')))
@@ -76,13 +84,13 @@ def fill_meaning() -> None:
         return
 
     word = try_get_data(jp, 'word', 'reading')
-    try_set_field(note, WORD_FIELD, word)
+    try_set_field(note, word_field, word)
 
     reading = try_get_data(jp, 'reading')
-    try_set_field(note, READING_FIELD, reading)
+    try_set_field(note, reading_field, reading)
 
     senses = try_get_data(data, 'senses')
-    try_set_field(note, MEANING_FIELD, get_meaning(senses))
+    try_set_field(note, meaning_field, get_meaning(senses))
 
     editor.loadNoteKeepingFocus()
     return
@@ -129,7 +137,7 @@ def try_set_field(note: Note, key: str, value: Any):
 
 
 action = qt.QAction('&Jisho Auto-Fill', mw)
-action.setShortcut('Ctrl+Shift+J')
+action.setShortcut(shortcut)
 action.setShortcutContext(QtCore.Qt.ApplicationShortcut)
 qt.qconnect(action.triggered, jisho_import)
 mw.form.menuTools.addAction(action)

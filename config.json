@@ -1,0 +1,9 @@
+{
+  "fields": {
+    "lookup": "Expression",
+    "meaning": "Meaning",
+    "reading": "Reading",
+    "word": "Expression"
+  },
+  "hotkey": "Ctrl+Shift+J"
+}
