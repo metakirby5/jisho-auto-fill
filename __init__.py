@@ -7,7 +7,7 @@ Based on https://ankiweb.net/shared/info/1545080191.
 """
 from concurrent.futures import Future
 from concurrent.futures.thread import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, Iterable
 
 import aqt.qt as qt
 from PyQt5 import QtCore
@@ -68,9 +68,8 @@ def batch_create() -> None:
         return
 
     terms = terms_text.splitlines()
-    dupes = []
 
-    def create_cards() -> None:
+    def create_cards() -> Iterable[str]:
         with ThreadPoolExecutor() as executor:
             for data in executor.map(jisho.fetch, terms):
                 note = Note(mw.col, model)
@@ -79,14 +78,16 @@ def batch_create() -> None:
                 mw.col.add_note(note, deck_id)
 
                 if note.dupeOrEmpty():
-                    dupes.append(word)
+                    yield word
 
-    def finish(_: Future) -> None:
+    def finish(future: Future) -> None:
+        result = list(future.result())
+
         mw.autosave()
         showInfo("Done!")
 
-        if dupes:
-            showWarning("Found duplicates:\n\n" + '\n'.join(dupes))
+        if result:
+            showWarning(f"Found duplicates:\n\n" + '\n'.join(result))
 
     mw.taskman.with_progress(create_cards, finish, label="Creating cards...")
 
@@ -120,10 +121,12 @@ def fill_card() -> None:
             showInfo(f'{config.lookup_field} is empty.')
             return
 
-        data = jisho.fetch(term)
-        jisho.set_note_data(note, data)
+        def finish(future: Future) -> None:
+            data = future.result()
+            jisho.set_note_data(note, data)
+            editor.loadNoteKeepingFocus()
 
-        editor.loadNoteKeepingFocus()
+        mw.taskman.with_progress(lambda: jisho.fetch(term), finish, label="Fetching from Jisho...")
 
     editor.saveNow(fill_meaning)
 
