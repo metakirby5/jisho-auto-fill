@@ -91,7 +91,7 @@ def batch_create() -> None:
         showInfo("Done!")
 
         if missing:
-            showWarning(f"Could not find on Jisho:\n\n" + '\n'.join(missing))
+            showWarning(f"Lookup failed:\n\n" + '\n'.join(missing))
 
         if dupes:
             showWarning(f"Found duplicates:\n\n" + '\n'.join(dupes))
@@ -131,13 +131,13 @@ def fill_card() -> None:
         def finish(future: Future) -> None:
             data = future.result()
             if not data:
-                showWarning("No results from Jisho.")
+                showWarning("Lookup failed.")
                 return
 
             jisho.set_note_data(note, data)
             editor.loadNoteKeepingFocus()
 
-        mw.taskman.with_progress(lambda: jisho.fetch(term), finish, label="Fetching from Jisho...")
+        mw.taskman.with_progress(lambda: jisho.fetch(term), finish, label="Fetching data...")
 
     editor.saveNow(fill_meaning)
 
