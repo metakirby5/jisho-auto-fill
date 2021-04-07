@@ -7,7 +7,7 @@ Based on https://ankiweb.net/shared/info/1545080191.
 """
 from concurrent.futures import Future
 from concurrent.futures.thread import ThreadPoolExecutor
-from typing import Optional, Iterable
+from typing import Optional
 
 import aqt.qt as qt
 from PyQt5 import QtCore
@@ -68,26 +68,33 @@ def batch_create() -> None:
         return
 
     terms = terms_text.splitlines()
+    missing = []
+    dupes = []
 
-    def create_cards() -> Iterable[str]:
+    def create_cards() -> None:
         with ThreadPoolExecutor() as executor:
-            for data in executor.map(jisho.fetch, terms):
+            for idx, data in executor.map(lambda i, x: (i, jisho.fetch(x)), *zip(*enumerate(terms))):
+                if not data:
+                    missing.append(terms[idx])
+                    continue
+
                 note = Note(mw.col, model)
                 word = jisho.set_note_data(note, data)
                 note.setTagsFromStr(tags_text)
                 mw.col.add_note(note, deck_id)
 
                 if note.dupeOrEmpty():
-                    yield word
+                    dupes.append(word)
 
-    def finish(future: Future) -> None:
-        result = list(future.result())
-
+    def finish(_: Future) -> None:
         mw.autosave()
         showInfo("Done!")
 
-        if result:
-            showWarning(f"Found duplicates:\n\n" + '\n'.join(result))
+        if missing:
+            showWarning(f"Could not find on Jisho:\n\n" + '\n'.join(missing))
+
+        if dupes:
+            showWarning(f"Found duplicates:\n\n" + '\n'.join(dupes))
 
     mw.taskman.with_progress(create_cards, finish, label="Creating cards...")
 
@@ -123,6 +130,10 @@ def fill_card() -> None:
 
         def finish(future: Future) -> None:
             data = future.result()
+            if not data:
+                showWarning("No results from Jisho.")
+                return
+
             jisho.set_note_data(note, data)
             editor.loadNoteKeepingFocus()
 
