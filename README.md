@@ -4,6 +4,8 @@ An Anki menu item found in `Tools` which will search
 [jisho.org](https://jisho.org)
 for a lookup term and automatically fill out fields.
 
+Supports batch creation.
+
 Based on 
 [https://ankiweb.net/shared/info/1545080191](https://ankiweb.net/shared/info/1545080191).
 
@@ -14,6 +16,10 @@ Based on
 The app-wide 
 [hotkey](https://doc.qt.io/archives/qt-4.8/qkeysequence.html)
 to activate auto-fill.
+
+### note
+
+The note type to use for batch creation.
 
 ### fields
 

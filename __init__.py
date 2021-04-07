@@ -6,27 +6,28 @@ Globally bound to Ctrl+Shift+J.
 Based on https://ankiweb.net/shared/info/1545080191.
 """
 
-import json
-from typing import Optional, Any, Dict, Sequence
-from urllib.parse import quote
-from urllib.request import urlopen
+from typing import Optional
 
 import aqt.qt as qt
 from PyQt5 import QtCore
 from anki.notes import Note
 from aqt import mw, gui_hooks
 from aqt.editor import Editor
-from aqt.utils import showInfo
+from aqt.utils import getOnlyText, getTag, showInfo, showCritical
 
-JISHO_SEARCH = 'https://jisho.org/api/v1/search/words?keyword={0}'
+from . import config
+from . import pickers
+from . import jisho
 
-config = mw.addonManager.getConfig(__name__)
-shortcut = config['hotkey']
-fields = config['fields']
-lookup_field = fields['lookup']
-word_field = fields['word']
-reading_field = fields['reading']
-meaning_field = fields['meaning']
+menu = qt.QMenu('&Jisho Auto-Fill', mw)
+
+batch_create_action = menu.addAction('&Batch Create')
+
+fill_card_action = menu.addAction('&Current Card')
+fill_card_action.setShortcut(config.shortcut)
+fill_card_action.setShortcutContext(QtCore.Qt.ApplicationShortcut)
+
+mw.form.menuTools.addMenu(menu)
 
 editor: Optional[Editor] = None
 
@@ -34,110 +35,83 @@ editor: Optional[Editor] = None
 def loaded_note(note_editor: Editor) -> None:
     global editor
     editor = note_editor
+    fill_card_action.setEnabled(bool(editor and editor.note))
 
 
 gui_hooks.editor_did_load_note.append(loaded_note)
 
 
-def jisho_import() -> None:
+def batch_create() -> None:
+    if not config.note:
+        showCritical("No note type configured.")
+        return
+
+    model = mw.col.models.byName(config.note)
+    if not model:
+        showCritical(f"No note type with name {config.note}.")
+
+    deck_id = pickers.select_deck_id("Select the destination.")
+    if deck_id is None:
+        showCritical("No decks!")
+        return
+
+    terms_text = getOnlyText("Enter each term separated by a newline.")
+    if not terms_text:
+        showInfo("No terms to create.")
+        return
+
+    # noinspection PyTypeChecker
+    tags_text, _ = getTag(mw, mw.col, "Enter tags for created cards.")
+
+    terms = terms_text.splitlines()
+
+    def create_cards() -> None:
+        for term in terms:
+            data = jisho.fetch(term)
+            note = Note(mw.col, model)
+            # TODO(!): This doesn't set the note data...
+            jisho.set_note_data(model, data)
+            note.setTagsFromStr(tags_text)
+            mw.col.add_note(note, deck_id)
+
+    mw.taskman.with_progress(create_cards, label="Creating cards...")
+
+
+qt.qconnect(batch_create_action.triggered, batch_create)
+
+
+def fill_card() -> None:
     if not (editor and editor.note):
         showInfo('Not editing a note.')
+        fill_card_action.setEnabled(False)
         return
+
+    def fill_meaning() -> None:
+        if not config.lookup_field:
+            showCritical('No lookup field configured.')
+            return
+
+        if not (editor and editor.note):
+            showCritical('No note to save.')
+            return
+
+        note = editor.note
+
+        try:
+            term = note[config.lookup_field]
+        except KeyError:
+            showCritical(f'{config.lookup_field} not in note.')
+            return
+        if not term:
+            showInfo(f'{config.lookup_field} is empty.')
+            return
+
+        data = jisho.fetch(term)
+        jisho.set_note_data(note, data)
+
+        editor.loadNoteKeepingFocus()
 
     editor.saveNow(fill_meaning)
 
 
-def fill_meaning() -> None:
-    if not (editor and editor.note):
-        showInfo('No note to save.')
-        return
-
-    note = editor.note
-
-    if not lookup_field:
-        showInfo('No lookup field.')
-        return
-
-    try:
-        word = note[lookup_field]
-    except KeyError:
-        showInfo(f'{lookup_field} not in note.')
-        return
-    if not word:
-        showInfo(f'{lookup_field} is empty.')
-        return
-
-    url = JISHO_SEARCH.format(quote(word.encode('utf8')))
-
-    try:
-        response = urlopen(url).read()
-        data = json.loads(response)
-    except IOError:
-        showInfo('Cannot reach Jisho.')
-        return
-
-    try:
-        data = data['data'][0]
-        jp = data['japanese'][0]
-    except (IndexError, KeyError):
-        showInfo('No results from Jisho.')
-        return
-
-    word = try_get_data(jp, 'word', 'reading')
-    try_set_field(note, word_field, word)
-
-    reading = try_get_data(jp, 'reading')
-    try_set_field(note, reading_field, reading)
-
-    senses = try_get_data(data, 'senses')
-    try_set_field(note, meaning_field, get_meaning(senses))
-
-    editor.loadNoteKeepingFocus()
-    return
-
-
-def get_meaning(senses: Optional[Sequence[Dict[str, Sequence[str]]]]) \
-        -> Optional[str]:
-    if not senses:
-        return None
-
-    return f'''<dl>{''.join(
-        f'<dt>{get_parts_of_speech(sense)}</dt>'
-        f'<dd>{get_definition(sense)}</dd>'
-        for sense in senses
-    )}</dl>'''
-
-
-def get_parts_of_speech(sense: Dict[str, Sequence[str]]) -> str:
-    return ', '.join(sense['parts_of_speech'])
-
-
-def get_definition(sense: Dict[str, Sequence[str]]) -> str:
-    return '; '.join(sense['english_definitions'])
-
-
-def try_get_data(data: Dict[str, str], *keys: str) -> Optional[Any]:
-    for key in keys:
-        try:
-            return data[key]
-        except KeyError:
-            pass
-    showInfo(f'{", ".join(keys)} not in Jisho data.')
-    return None
-
-
-def try_set_field(note: Note, key: str, value: Any):
-    if not (key and value):
-        return
-
-    try:
-        note[key] = value
-    except KeyError:
-        showInfo(f'{key} not in note.')
-
-
-action = qt.QAction('&Jisho Auto-Fill', mw)
-action.setShortcut(shortcut)
-action.setShortcutContext(QtCore.Qt.ApplicationShortcut)
-qt.qconnect(action.triggered, jisho_import)
-mw.form.menuTools.addAction(action)
+qt.qconnect(fill_card_action.triggered, fill_card)
