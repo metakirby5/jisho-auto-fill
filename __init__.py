@@ -5,7 +5,7 @@ Globally bound to Ctrl+Shift+J.
 
 Based on https://ankiweb.net/shared/info/1545080191.
 """
-
+from concurrent.futures import Future
 from typing import Optional
 
 import aqt.qt as qt
@@ -16,8 +16,9 @@ from aqt.editor import Editor
 from aqt.utils import getOnlyText, getTag, showInfo, showCritical
 
 from . import config
-from . import pickers
 from . import jisho
+from . import pickers
+from . import proxies
 
 menu = qt.QMenu('&Jisho Auto-Fill', mw)
 
@@ -55,14 +56,15 @@ def batch_create() -> None:
         showCritical("No decks!")
         return
 
-    # TODO(!): Change to multi-line input.
-    terms_text = getOnlyText("Enter each term separated by a newline.")
+    terms_text = getOnlyText("Enter each term separated by a newline.", edit=proxies.QMultiLineEdit())
     if not terms_text:
         showInfo("No terms to create.")
         return
 
     # noinspection PyTypeChecker
-    tags_text, _ = getTag(mw, mw.col, "Enter tags for created cards.")
+    tags_text, tags_ok = getTag(mw, mw.col, "Enter tags for created cards.")
+    if not tags_ok:
+        return
 
     terms = terms_text.splitlines()
 
@@ -74,9 +76,11 @@ def batch_create() -> None:
             note.setTagsFromStr(tags_text)
             mw.col.add_note(note, deck_id)
 
+    def finish(_: Future) -> None:
         mw.autosave()
+        showInfo("Done!")
 
-    mw.taskman.with_progress(create_cards, label="Creating cards...")
+    mw.taskman.with_progress(create_cards, finish, label="Creating cards...")
 
 
 qt.qconnect(batch_create_action.triggered, batch_create)
