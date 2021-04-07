@@ -54,7 +54,7 @@ def batch_create() -> None:
 
     deck_id = pickers.select_deck_id("Select the destination.")
     if deck_id is None:
-        showCritical("No decks!")
+        showCritical("No decks.")
         return
 
     terms_text = getOnlyText("Enter each term separated by a newline.", edit=proxies.QMultiLineEdit())
@@ -103,18 +103,19 @@ qt.qconnect(batch_create_action.triggered, batch_create)
 
 
 def fill_card() -> None:
+    if not config.lookup_field:
+        showCritical('No lookup field configured.')
+        return
+
     if not (editor and editor.note):
         showInfo('Not editing a note.')
         fill_card_action.setEnabled(False)
         return
 
     def fill_meaning() -> None:
-        if not config.lookup_field:
-            showCritical('No lookup field configured.')
-            return
-
         if not (editor and editor.note):
             showCritical('No note to save.')
+            fill_card_action.setEnabled(False)
             return
 
         note = editor.note
