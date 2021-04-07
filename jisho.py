@@ -9,7 +9,6 @@ from urllib.parse import quote
 from urllib.request import urlopen
 
 from anki.notes import Note
-from aqt.utils import showInfo, showCritical
 
 from . import config
 
@@ -23,13 +22,11 @@ def fetch(search: str) -> Optional[Dict[str, Any]]:
         response = urlopen(url).read()
         data = json.loads(response)
     except IOError:
-        showCritical('Cannot reach Jisho.')
         return
 
     try:
         return data['data'][0]
     except (IndexError, KeyError):
-        showInfo('No results from Jisho.')
         return
 
 
@@ -44,10 +41,9 @@ def set_note_data(note: Note, data: Dict[str, Any]) -> str:
     return word
 
 
-def get_meaning(senses: Optional[Sequence[Dict[str, Sequence[str]]]]) \
-        -> Optional[str]:
+def get_meaning(senses: Optional[Sequence[Dict[str, Sequence[str]]]]) -> Optional[str]:
     if not senses:
-        return None
+        return
 
     return f'''<dl>{''.join(
         f'<dt>{get_parts_of_speech(sense)}</dt>'
@@ -70,7 +66,6 @@ def try_get_data(data: Dict[str, str], *keys: str) -> Optional[Any]:
             return data[key]
         except KeyError:
             pass
-    return None
 
 
 def try_set_field(note: Note, key: str, value: Any):
