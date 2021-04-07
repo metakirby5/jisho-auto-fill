@@ -13,7 +13,7 @@ from PyQt5 import QtCore
 from anki.notes import Note
 from aqt import mw, gui_hooks
 from aqt.editor import Editor
-from aqt.utils import getOnlyText, getTag, showInfo, showCritical
+from aqt.utils import getOnlyText, getTag, showInfo, showWarning, showCritical
 
 from . import config
 from . import jisho
@@ -67,6 +67,7 @@ def batch_create() -> None:
         return
 
     terms = terms_text.splitlines()
+    dupes = []
 
     def create_cards() -> None:
         for term in terms:
@@ -76,9 +77,15 @@ def batch_create() -> None:
             note.setTagsFromStr(tags_text)
             mw.col.add_note(note, deck_id)
 
+            if note.dupeOrEmpty():
+                dupes.append(term)
+
     def finish(_: Future) -> None:
         mw.autosave()
         showInfo("Done!")
+
+        if dupes:
+            showWarning("Found duplicates:\n\n" + '\n'.join(dupes))
 
     mw.taskman.with_progress(create_cards, finish, label="Creating cards...")
 
