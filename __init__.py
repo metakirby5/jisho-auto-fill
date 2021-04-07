@@ -6,6 +6,7 @@ Globally bound to Ctrl+Shift+J.
 Based on https://ankiweb.net/shared/info/1545080191.
 """
 from concurrent.futures import Future
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Optional
 
 import aqt.qt as qt
@@ -70,15 +71,15 @@ def batch_create() -> None:
     dupes = []
 
     def create_cards() -> None:
-        for term in terms:
-            data = jisho.fetch(term)
-            note = Note(mw.col, model)
-            jisho.set_note_data(note, data)
-            note.setTagsFromStr(tags_text)
-            mw.col.add_note(note, deck_id)
+        with ThreadPoolExecutor() as executor:
+            for data in executor.map(jisho.fetch, terms):
+                note = Note(mw.col, model)
+                word = jisho.set_note_data(note, data)
+                note.setTagsFromStr(tags_text)
+                mw.col.add_note(note, deck_id)
 
-            if note.dupeOrEmpty():
-                dupes.append(term)
+                if note.dupeOrEmpty():
+                    dupes.append(word)
 
     def finish(_: Future) -> None:
         mw.autosave()
