@@ -33,7 +33,7 @@ def fetch(search: str) -> Optional[Dict[str, Any]]:
         return
 
 
-def set_note_data(note, data):
+def set_note_data(note: Note, data: Dict[str, Any]):
     jp = data['japanese'][0]
     word = try_get_data(jp, 'word', 'reading')
     try_set_field(note, config.word_field, word)

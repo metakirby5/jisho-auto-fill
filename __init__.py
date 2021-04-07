@@ -55,6 +55,7 @@ def batch_create() -> None:
         showCritical("No decks!")
         return
 
+    # TODO(!): Change to multi-line input.
     terms_text = getOnlyText("Enter each term separated by a newline.")
     if not terms_text:
         showInfo("No terms to create.")
@@ -69,10 +70,11 @@ def batch_create() -> None:
         for term in terms:
             data = jisho.fetch(term)
             note = Note(mw.col, model)
-            # TODO(!): This doesn't set the note data...
-            jisho.set_note_data(model, data)
+            jisho.set_note_data(note, data)
             note.setTagsFromStr(tags_text)
             mw.col.add_note(note, deck_id)
+
+        mw.autosave()
 
     mw.taskman.with_progress(create_cards, label="Creating cards...")
 
