@@ -103,6 +103,7 @@ def batch_create() -> None:
 
     def finish(_: Future) -> None:
         mw.autosave()
+        mw.reset()
         showInfo("Done!")
 
         if missing:
