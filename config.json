@@ -6,5 +6,9 @@
     "word": "Expression"
   },
   "note": "Japanese",
-  "hotkey": "Ctrl+Shift+J"
+  "hotkey": "Ctrl+Shift+J",
+  "tags": {
+    "changed": "jisho-auto-fill-changed",
+    "duplicate": "jisho-auto-fill-duplicate"
+  }
 }

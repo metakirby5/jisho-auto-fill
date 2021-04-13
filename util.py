@@ -5,8 +5,17 @@ Anki collection selectors.
 
 from typing import Optional
 
+from anki.notes import Note
 from aqt import mw
 from aqt.utils import chooseList
+
+
+def try_add_tag(note: Note, tag: str) -> bool:
+    if not tag:
+        return False
+
+    note.addTag(tag)
+    return True
 
 
 def select_deck_id(prompt: str) -> Optional[int]:

@@ -28,7 +28,14 @@ Configuration values are field names.
 `lookup` is used as the search term, 
 and is commonly set to the same as `word`
 so label from jisho.org is used.
-It is the only mandatory configuration value.
+It is the only mandatory field configuration value.
 
-All other field names may be left blank,
+All other field names may be left empty,
 and they will simply be ignored.
+
+### tags
+
+Tags used to identify error cases.
+Leave empty to not tag.
+
+`duplicate` tagging is based on the `word` label.

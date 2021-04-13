@@ -18,8 +18,8 @@ from aqt.utils import getOnlyText, getTag, showInfo, showWarning, showCritical
 
 from . import config
 from . import jisho
-from . import pickers
 from . import proxies
+from . import util
 
 menu = qt.QMenu('&Jisho Auto-Fill', mw)
 
@@ -48,11 +48,12 @@ def batch_create() -> None:
         showCritical("No note type configured.")
         return
 
-    model = mw.col.models.byName(config.note)
+    col = mw.col
+    model = col.models.byName(config.note)
     if not model:
         showCritical(f"No note type with name {config.note}.")
 
-    deck_id = pickers.select_deck_id("Select the destination.")
+    deck_id = util.select_deck_id("Select the destination.")
     if deck_id is None:
         showCritical("No decks.")
         return
@@ -63,34 +64,42 @@ def batch_create() -> None:
         return
 
     # noinspection PyTypeChecker
-    tags_text, tags_ok = getTag(mw, mw.col, "Enter tags for created cards.")
+    tags_text, tags_ok = getTag(mw, col, "Enter tags for created cards.")
     if not tags_ok:
         return
 
     terms = terms_text.splitlines()
+    tags = col.tags.split(tags_text)
     missing = []
     changed = []
     dupes = []
 
     def create_cards() -> None:
         with ThreadPoolExecutor() as executor:
-            for idx, data in executor.map(lambda i, x: (i, jisho.fetch(x)), *zip(*enumerate(terms))):
-                term = terms[idx]
+            for term, data in zip(terms, executor.map(jisho.fetch, terms)):
                 if not data:
                     missing.append(term)
                     continue
 
-                note = Note(mw.col, model)
+                note = Note(col, model)
                 word = jisho.set_note_data(note, data)
+
+                note.tags = tags.copy()
 
                 if term != word:
                     changed.append(f"{term} → {word}")
-
-                note.setTagsFromStr(tags_text)
-                mw.col.add_note(note, deck_id)
+                    util.try_add_tag(note, config.changed_tag)
 
                 if note.dupeOrEmpty():
                     dupes.append(word)
+                    for nid in col.find_notes(f"{config.word_field}:{word}"):
+                        existing_note = col.getNote(nid)
+                        existing_note.tags.extend(tags)
+                        util.try_add_tag(existing_note, config.duplicate_tag)
+                        existing_note.flush()
+                    continue
+
+                col.add_note(note, deck_id)
 
     def finish(_: Future) -> None:
         mw.autosave()
@@ -103,7 +112,7 @@ def batch_create() -> None:
             showWarning(f"Terms differed from search result:\n\n" + '\n'.join(changed))
 
         if dupes:
-            showWarning(f"Found duplicates:\n\n" + '\n'.join(dupes))
+            showWarning(f"Merged tags of duplicates:\n\n" + '\n'.join(dupes))
 
     mw.taskman.with_progress(create_cards, finish, label="Creating cards...")
 
