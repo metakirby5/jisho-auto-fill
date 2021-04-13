@@ -69,17 +69,23 @@ def batch_create() -> None:
 
     terms = terms_text.splitlines()
     missing = []
+    changed = []
     dupes = []
 
     def create_cards() -> None:
         with ThreadPoolExecutor() as executor:
             for idx, data in executor.map(lambda i, x: (i, jisho.fetch(x)), *zip(*enumerate(terms))):
+                term = terms[idx]
                 if not data:
-                    missing.append(terms[idx])
+                    missing.append(term)
                     continue
 
                 note = Note(mw.col, model)
                 word = jisho.set_note_data(note, data)
+
+                if term != word:
+                    changed.append(f"{term} → {word}")
+
                 note.setTagsFromStr(tags_text)
                 mw.col.add_note(note, deck_id)
 
@@ -92,6 +98,9 @@ def batch_create() -> None:
 
         if missing:
             showWarning(f"Lookup failed:\n\n" + '\n'.join(missing))
+
+        if changed:
+            showWarning(f"Terms differed from search result:\n\n" + '\n'.join(changed))
 
         if dupes:
             showWarning(f"Found duplicates:\n\n" + '\n'.join(dupes))
