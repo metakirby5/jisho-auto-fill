@@ -32,12 +32,13 @@ def fetch(search: str) -> Optional[Dict[str, Any]]:
 
 def set_note_data(note: Note, data: Dict[str, Any]) -> str:
     jp = data['japanese'][0]
-    word = try_get_data(jp, 'word', 'reading')
-    try_set_field(note, config.word_field, word)
     reading = try_get_data(jp, 'reading')
-    try_set_field(note, config.reading_field, reading)
     senses = try_get_data(data, 'senses')
+    word = reading if uses_kana(senses) else try_get_data(jp, 'word')
+
+    try_set_field(note, config.reading_field, reading)
     try_set_field(note, config.meaning_field, get_meaning(senses))
+    try_set_field(note, config.word_field, word)
     return word
 
 
@@ -58,6 +59,12 @@ def get_parts_of_speech(sense: Dict[str, Sequence[str]]) -> str:
 
 def get_definition(sense: Dict[str, Sequence[str]]) -> str:
     return '; '.join(sense['english_definitions'])
+
+
+def uses_kana(senses: Sequence[Dict[str, Sequence[str]]]) -> bool:
+    if not senses:
+        return False
+    return any('kana alone' in tag for tag in senses[0]['tags'])
 
 
 def try_get_data(data: Dict[str, str], *keys: str) -> Optional[Any]:
