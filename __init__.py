@@ -100,6 +100,7 @@ def batch_create() -> None:
                         existing_note.flush()
                     continue
 
+                util.try_add_tag(note, config.added_tag)
                 col.add_note(note, deck_id)
 
     def finish(_: Future) -> None:
