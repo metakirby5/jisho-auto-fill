@@ -52,6 +52,7 @@ def batch_create() -> None:
     model = col.models.byName(config.note)
     if not model:
         showCritical(f"No note type with name {config.note}.")
+        return
 
     deck_id = util.select_deck_id("Select the destination.")
     if deck_id is None:
