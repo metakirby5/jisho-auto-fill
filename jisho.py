@@ -46,7 +46,7 @@ def set_note_data(note: Note, data: Dict[str, Any]) -> str:
     jp = data['japanese'][0]
     reading = try_get_data(jp, 'reading')
     senses = try_get_data(data, 'senses')
-    word = reading if uses_kana(senses) else try_get_data(jp, 'word')
+    word = reading if uses_kana(senses) else try_get_data(jp, 'word', 'reading')
 
     try_set_field(note, config.reading_field, reading)
     try_set_field(note, config.meaning_field, get_meaning(senses))
