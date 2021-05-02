@@ -11,7 +11,7 @@ Based on
 
 ## Configuration
 
-### shortcut
+### hotkey
 
 The app-wide 
 [hotkey](https://doc.qt.io/archives/qt-4.8/qkeysequence.html)
@@ -20,6 +20,10 @@ to activate auto-fill.
 ### note
 
 The note type to use for batch creation.
+
+### retries
+
+The number of retries upon API failure.
 
 ### fields
 

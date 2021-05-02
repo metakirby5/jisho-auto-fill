@@ -8,6 +8,7 @@ from aqt import mw
 config = mw.addonManager.getConfig(__name__)
 shortcut = config['hotkey']
 note = config['note']
+retries = config['retries']
 fields = config['fields']
 lookup_field = fields['lookup']
 word_field = fields['word']

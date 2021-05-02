@@ -7,6 +7,7 @@
   },
   "note": "Japanese",
   "hotkey": "Ctrl+Shift+J",
+  "retries": 5,
   "tags": {
     "added": "jisho-auto-fill::added",
     "changed": "jisho-auto-fill::changed",

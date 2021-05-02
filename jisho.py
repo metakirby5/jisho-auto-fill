@@ -15,6 +15,18 @@ from . import config
 JISHO_SEARCH = 'https://jisho.org/api/v1/search/words?keyword={0}'
 
 
+class JishoError(Exception):
+    pass
+
+
+def fetch_with_retry(search: str) -> Optional[Dict[str, Any]]:
+    for _ in range(config.retries):
+        try:
+            return fetch(search)
+        except JishoError:
+            pass
+
+
 def fetch(search: str) -> Optional[Dict[str, Any]]:
     url = JISHO_SEARCH.format(quote(search.encode('utf8')))
 
@@ -22,12 +34,12 @@ def fetch(search: str) -> Optional[Dict[str, Any]]:
         response = urlopen(url).read()
         data = json.loads(response)
     except IOError:
-        return
+        raise JishoError
 
     try:
         return data['data'][0]
     except (IndexError, KeyError):
-        return
+        raise JishoError
 
 
 def set_note_data(note: Note, data: Dict[str, Any]) -> str:

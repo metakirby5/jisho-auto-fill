@@ -77,7 +77,7 @@ def batch_create() -> None:
 
     def create_cards() -> None:
         with ThreadPoolExecutor() as executor:
-            for term, data in zip(terms, executor.map(jisho.fetch, terms)):
+            for term, data in zip(terms, executor.map(jisho.fetch_with_retry, terms)):
                 if not data:
                     missing.append(term)
                     continue
@@ -159,7 +159,7 @@ def fill_card() -> None:
             jisho.set_note_data(note, data)
             editor.loadNoteKeepingFocus()
 
-        mw.taskman.with_progress(lambda: jisho.fetch(term), finish, label="Fetching data...")
+        mw.taskman.with_progress(lambda: jisho.fetch_with_retry(term), finish, label="Fetching data...")
 
     editor.saveNow(fill_meaning)
 
