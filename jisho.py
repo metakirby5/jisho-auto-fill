@@ -4,6 +4,7 @@ Utils for parsing results from Jisho.
 """
 
 import json
+from time import sleep
 from typing import Any, Dict, Optional, Sequence
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -20,11 +21,11 @@ class JishoError(Exception):
 
 
 def fetch_with_retry(search: str) -> Optional[Dict[str, Any]]:
-    for _ in range(config.retries):
+    for _ in range(config.retry_times):
         try:
             return fetch(search)
         except JishoError:
-            pass
+            sleep(config.retry_delay_seconds)
 
 
 def fetch(search: str) -> Optional[Dict[str, Any]]:

@@ -2,19 +2,22 @@
 """
 Configuration values.
 """
+from typing import Any, Dict
 
 from aqt import mw
 
-config = mw.addonManager.getConfig(__name__)
-shortcut = config['hotkey']
-note = config['note']
-retries = config['retries']
-fields = config['fields']
-lookup_field = fields['lookup']
-word_field = fields['word']
-reading_field = fields['reading']
-meaning_field = fields['meaning']
-tags = config['tags']
-added_tag = tags['added']
-changed_tag = tags['changed']
-duplicate_tag = tags['duplicate']
+config: Dict[str, Any] = mw.addonManager.getConfig(__name__)
+shortcut: str = config['hotkey']
+note: str = config['note']
+retry: Dict[str, Any] = config['retry']
+retry_times: int = retry['times']
+retry_delay_seconds: float = retry['delay_seconds']
+fields: Dict[str, str] = config['fields']
+lookup_field: str = fields['lookup']
+word_field: str = fields['word']
+reading_field: str = fields['reading']
+meaning_field: str = fields['meaning']
+tags: Dict[str, str] = config['tags']
+added_tag: str = tags['added']
+changed_tag: str = tags['changed']
+duplicate_tag: str = tags['duplicate']

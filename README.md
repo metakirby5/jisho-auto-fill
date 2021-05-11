@@ -21,9 +21,10 @@ to activate auto-fill.
 
 The note type to use for batch creation.
 
-### retries
+### retry
 
-The number of retries upon API failure.
+Options relating to retry policy when API lookup fails,
+which can happen when too many requests are made.
 
 ### fields
 
