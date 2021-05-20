@@ -85,23 +85,25 @@ def batch_create() -> None:
                 note = Note(col, model)
                 word = jisho.set_note_data(note, data)
 
-                note.tags = tags.copy()
+                def apply_tags(target: Note):
+                    if term != word:
+                        changed.append(f"{term} → {word}")
+                        util.try_add_tag(target, config.changed_tag)
 
-                if term != word:
-                    changed.append(f"{term} → {word}")
-                    util.try_add_tag(note, config.changed_tag)
+                    target.tags.extend(tags)
 
-                if note.dupeOrEmpty():
-                    dupes.append(word)
-                    for nid in col.find_notes(f"{config.word_field}:{word}"):
-                        existing_note = col.getNote(nid)
-                        existing_note.tags.extend(tags)
-                        util.try_add_tag(existing_note, config.duplicate_tag)
-                        existing_note.flush()
+                if not note.dupeOrEmpty():
+                    util.try_add_tag(note, config.added_tag)
+                    apply_tags(note)
+                    col.add_note(note, deck_id)
                     continue
 
-                util.try_add_tag(note, config.added_tag)
-                col.add_note(note, deck_id)
+                dupes.append(word)
+                for nid in col.find_notes(f"{config.word_field}:{word}"):
+                    existing_note = col.getNote(nid)
+                    util.try_add_tag(existing_note, config.duplicate_tag)
+                    apply_tags(existing_note)
+                    existing_note.flush()
 
     def finish(_: Future) -> None:
         mw.autosave()
