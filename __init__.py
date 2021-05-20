@@ -69,7 +69,7 @@ def batch_create() -> None:
     if not tags_ok:
         return
 
-    terms = terms_text.splitlines()
+    terms = filter(None, terms_text.splitlines())
     tags = col.tags.split(tags_text)
     missing = []
     changed = []
