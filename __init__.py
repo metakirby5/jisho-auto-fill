@@ -162,6 +162,9 @@ def fill_card() -> None:
             jisho.set_note_data(note, data)
             editor.loadNoteKeepingFocus()
 
+            if not editor.addMode:
+                note.flush()
+
         mw.taskman.with_progress(lambda: jisho.fetch_with_retry(term), finish, label="Fetching data...")
 
     editor.saveNow(fill_meaning)
