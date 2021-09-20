@@ -7,7 +7,7 @@ Based on https://ankiweb.net/shared/info/1545080191.
 """
 from concurrent.futures import Future
 from concurrent.futures.thread import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, Set
 
 import aqt.qt as qt
 from PyQt5 import QtCore
@@ -31,16 +31,16 @@ fill_card_action.setShortcutContext(QtCore.Qt.ApplicationShortcut)
 
 mw.form.menuTools.addMenu(menu)
 
-editor: Optional[Editor] = None
+editors: Set[Optional[Editor]] = set()
 
 
-def loaded_note(note_editor: Editor) -> None:
-    global editor
-    editor = note_editor
-    fill_card_action.setEnabled(bool(editor and editor.note))
+def get_editor():
+    return next(filter(lambda x: x.currentField is not None, editors), None)
 
 
-gui_hooks.editor_did_load_note.append(loaded_note)
+gui_hooks.editor_did_load_note.append(editors.add)
+gui_hooks.editor_did_unfocus_field.append(lambda c, n, i: fill_card_action.setEnabled(False))
+gui_hooks.editor_did_focus_field.append(lambda n, i: fill_card_action.setEnabled(True))
 
 
 def batch_create() -> None:
@@ -130,8 +130,9 @@ def fill_card() -> None:
         showCritical('No lookup field configured.')
         return
 
+    editor = get_editor()
     if not (editor and editor.note):
-        showInfo('Not editing a note.')
+        showInfo('Not focusing an editor.')
         fill_card_action.setEnabled(False)
         return
 
