@@ -14,6 +14,7 @@
   "tags": {
     "added": "jisho-auto-fill::added",
     "changed": "jisho-auto-fill::changed",
-    "duplicate": "jisho-auto-fill::duplicate"
+    "duplicate": "jisho-auto-fill::duplicate",
+    "missing": "jisho-auto-fill::missing"
   }
 }

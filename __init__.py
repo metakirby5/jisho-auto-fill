@@ -78,12 +78,15 @@ def batch_create() -> None:
     def create_cards() -> None:
         with ThreadPoolExecutor() as executor:
             for term, data in zip(terms, executor.map(jisho.fetch_with_retry, terms)):
-                if not data:
-                    missing.append(term)
-                    continue
-
                 note = Note(col, model)
-                word = jisho.set_note_data(note, data)
+                word = term
+
+                if data:
+                    word = jisho.set_note_data(note, data)
+                else:
+                    note[config.word_field] = word
+                    missing.append(term)
+                    util.try_add_tag(note, config.missing_tag)
 
                 def apply_tags(target: Note):
                     if term != word:
