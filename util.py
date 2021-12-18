@@ -5,6 +5,7 @@ Anki collection selectors.
 
 from typing import Optional
 
+from anki.decks import DeckId
 from anki.notes import Note
 from aqt import mw
 from aqt.utils import chooseList
@@ -18,7 +19,7 @@ def try_add_tag(note: Note, tag: str) -> bool:
     return True
 
 
-def select_deck_id(prompt: str) -> Optional[int]:
+def select_deck_id(prompt: str) -> Optional[DeckId]:
     decks = sorted(mw.col.decks.all_names_and_ids(), key=lambda x: x.name)
     if not decks:
         return
