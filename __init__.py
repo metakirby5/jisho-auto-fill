@@ -69,7 +69,7 @@ def batch_create() -> None:
     if not tags_ok:
         return
 
-    terms = [x for x in terms_text.splitlines() if x]
+    terms = [x.strip() for x in terms_text.splitlines() if x]
     tags = col.tags.split(tags_text)
     missing = []
     changed = []
@@ -148,7 +148,7 @@ def fill_card() -> None:
         note = editor.note
 
         try:
-            term = note[config.lookup_field]
+            term = note[config.lookup_field].strip()
         except KeyError:
             showCritical(f'{config.lookup_field} not in note.')
             return
